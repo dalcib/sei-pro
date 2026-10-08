@@ -280,9 +280,12 @@ function cabecalhos(servico: Servico, chave: string): Record<string, string> {
 /** Só os parâmetros que o usuário definiu; em branco é campo que não vai no pedido. */
 function parametrosDoModelo(o: OpcoesProvedor): Record<string, number> {
   const a = o.ajustes ?? {};
+  // Modelos Gemini (especialmente 3.6+ e 3.8+) deprecaram amostragem customizada
+  // e recusam requisições com temperature, top_p e top_k com erro 400.
+  const ehGemini = o.servico === "gemini" || /gemini/i.test(o.modelo ?? "");
   const pares: Array<[string, number | undefined]> = [
-    ["temperature", a.temperatura ?? o.temperatura ?? TEMPERATURA_PADRAO],
-    ["top_p", a.topP],
+    ["temperature", ehGemini ? undefined : (a.temperatura ?? o.temperatura ?? TEMPERATURA_PADRAO)],
+    ["top_p", ehGemini ? undefined : a.topP],
     ["max_tokens", a.maxTokens],
     ["frequency_penalty", a.penalidadeFrequencia],
     ["presence_penalty", a.penalidadePresenca],
@@ -295,12 +298,13 @@ function parametrosDoModelo(o: OpcoesProvedor): Record<string, number> {
  *
  * Os fabricantes divergem: modelos novos da OpenAI só aceitam a temperatura
  * padrão e trocaram `max_tokens` por `max_completion_tokens`; o Gemini ignora
- * umas penalidades e a Anthropic recusa outras. Em vez de manter uma tabela do
+ * penalidades, recusa amostragem customizada (temperature/top_p) e thinking_budget
+ * na família 3; a Anthropic recusa outras. Em vez de manter uma tabela do
  * que cada modelo aceita — que envelhece mal —, o pedido é refeito sem o campo
  * que a mensagem citou.
  */
 export function parametroRecusado(corpo: string): string | null {
-  const nomes = ["temperature", "top_p", "max_tokens", "frequency_penalty", "presence_penalty", "stream_options"];
+  const nomes = ["temperature", "top_p", "top_k", "thinking_budget", "max_tokens", "frequency_penalty", "presence_penalty", "stream_options"];
   const texto = corpo.toLowerCase();
   return nomes.find((n) => texto.includes(n)) ?? null;
 }

@@ -120,8 +120,25 @@ export async function verificarProvedor(): Promise<void> {
     corpo1,
   );
 
+  const semSamplingGemini = espiao([]);
+  await criarProvedor({
+    servico: "gemini",
+    chave: "k",
+    modelo: "gemini-3.5-flash",
+    ajustes: { temperatura: 0.7, topP: 0.8, maxTokens: 1000 },
+    fetch: semSamplingGemini.f,
+  }).conversar(PEDIDO, new AbortController().signal, () => {});
+  const corpoGemini = semSamplingGemini.chamadas[0].corpo;
+  checar("gemini nao envia temperature nem top_p mesmo configurados", !("temperature" in corpoGemini) && !("top_p" in corpoGemini) && corpoGemini.max_tokens === 1000);
+
+  const geminiPadrao = espiao([]);
+  await criarProvedor({ servico: "gemini", chave: "k", modelo: "gemini-2.5-flash", fetch: geminiPadrao.f }).conversar(PEDIDO, new AbortController().signal, () => {});
+  checar("gemini padrao nao envia temperature padrao", !("temperature" in geminiPadrao.chamadas[0].corpo));
+
   secao("provedor: ajuste que o modelo nao aceita");
   checar("acha o parametro citado no erro", parametroRecusado('{"error":{"message":"Unsupported value: \'temperature\' does not support 0.2"}}') === "temperature");
+  checar("acha thinking_budget citado no erro", parametroRecusado('{"error":{"message":"Invalid argument: thinking_budget is deprecated"}}') === "thinking_budget");
+  checar("acha top_k citado no erro", parametroRecusado('{"error":{"message":"Unsupported parameter: top_k"}}') === "top_k");
   checar("erro sem parametro conhecido nao vira retentativa", parametroRecusado('{"error":{"message":"model not found"}}') === null);
   const recusa = espiao([{ status: 400, corpo: '{"error":{"message":"Unsupported parameter: temperature"}}' }]);
   const r = await criarProvedor({ servico: "openai", chave: "k", modelo: "gpt-5", ajustes: { temperatura: 0.2, maxTokens: 500 }, fetch: recusa.f }).conversar(

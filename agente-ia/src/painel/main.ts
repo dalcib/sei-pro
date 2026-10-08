@@ -1311,7 +1311,7 @@ class App {
         "div",
         { class: "campo" },
         h("div", { class: "finos" }, temperatura.bloco, topP.bloco, maxTokens.bloco, penFrequencia.bloco, penPresenca.bloco),
-        h("div", { class: "ajuda" }, "Campo em branco usa o padr\u00E3o do servi\u00E7o. Modelo que n\u00E3o aceitar um desses ajustes faz o agente repetir o pedido sem ele."),
+        h("div", { class: "ajuda" }, "Campo em branco usa o padr\u00E3o do servi\u00E7o. No Google Gemini, a amostragem \u00E9 gerida pelo fabricante. Modelo que n\u00E3o aceitar um desses ajustes faz o agente repetir o pedido sem ele."),
         h("div", { class: "com-botao" }, padroes),
       ),
     );
